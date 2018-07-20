@@ -5,5 +5,5 @@ The pipeline integrates reads quality control, adaptor removal, reference genome
 
 'aimap' installs one scripts into the `$PATH`:
 
-*'aimap.py' that enables command-line A to I analysis.
+* `average_nucleotide_identity.py` that enables command-line A to I analysis.
 
