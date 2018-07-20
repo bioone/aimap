@@ -7,3 +7,6 @@ The pipeline integrates reads quality control, adaptor removal, reference genome
 
 * `aimap.py` that enables command-line A to I analysis.
 
+## Installation
+
+The easiest way to install `aimap` is to use `pip3`:
