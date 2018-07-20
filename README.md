@@ -10,3 +10,7 @@ The pipeline integrates reads quality control, adaptor removal, reference genome
 ## Installation
 
 The easiest way to install `aimap` is to use `pip3`:
+
+```
+pip3 install aimap
+```
