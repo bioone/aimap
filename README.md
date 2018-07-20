@@ -1,1 +1,1 @@
-#README.md (aimap)
+# README.md (pyani)
