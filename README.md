@@ -14,3 +14,7 @@ The easiest way to install `aimap` is to use `pip3`:
 ```
 pip3 install aimap
 ```
+
+## DEPENDENCIES
+
+Note that Python package dependencies should automatically be installed
