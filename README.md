@@ -25,5 +25,12 @@ Note that Python package dependencies should automatically be installed
 * **pandas** <https://pandas.pydata.org/>
 * **gffutils** <https://github.com/daler/gffutils>
 
-#### other tools
+#### Other tools
+
+* **trim_galore** <http://www.bioinformatics.babraham.ac.uk/projects/trim_galore/>
+* **BWA** <https://github.com/lh3/bwa>
+* **Samtools** <http://www.htslib.org/>
+
+**Note that you can find the full install instruction in install file.**
+
 
