@@ -33,4 +33,11 @@ Note that Python package dependencies should automatically be installed
 
 **Note that you can find the full install instruction in install file.**
 
+##Running `aimap`
+
+The `aimap.py` script - installed as part of this package - enables straightforward ANI analysis at the command-line, and uses the `aimap` module behind the scenes.
+
+You can get a summary of available command-line options with `aimap.py -h`
+
+
 
