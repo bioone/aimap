@@ -50,4 +50,24 @@ usage: aimap.py [-h] [--version] -o OUTDIRNAME -g GENOMENAME -a ANNOTATION
 […]
 ```
 
+## Licensing
+
+Unless otherwise indicated, all code is subject to the following agreement:
+
+    (c) Agriculture and Biology 2018, 2019
+    Author: Sai Wang
+
+    Contact: skyws@outlook.com
+
+    Address: 
+    Sai Wang,
+    Agriculture and Biology,
+    Errol Road,
+    Invergowrie,
+    Dundee,
+    DD6 9LH,
+    ShangHai,
+    CN
+
+The MIT License
 
