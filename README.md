@@ -39,5 +39,15 @@ The `aimap.py` script - installed as part of this package - enables straightforw
 
 You can get a summary of available command-line options with `aimap.py -h`
 
+```
+$ aimap.py -h
+usage: aimap.py [-h] [--version] -o OUTDIRNAME -g GENOMENAME -a ANNOTATION
+                --outfile_name OUTFILE_NAME [-l LENGTH] [-f FILENAME]
+                [-f1 FILENAME1] [-f2 FILENAME2] [-m {single,paired}]
+                [-t THREADS] [--logfile LOGFILE]
+                [--editing_level EDITING_LEVEL] [--coverage COVERAGE]
+
+[…]
+```
 
 
