@@ -18,3 +18,12 @@ pip3 install aimap
 ## DEPENDENCIES
 
 Note that Python package dependencies should automatically be installed
+
+### Python packages dependencies
+
+* **Biopython** <https://biopython.org/>
+* **pandas** <https://pandas.pydata.org/>
+* **gffutils** <https://github.com/daler/gffutils>
+
+#### other tools
+
