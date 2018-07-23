@@ -62,10 +62,7 @@ Unless otherwise indicated, all code is subject to the following agreement:
     Address: 
     Sai Wang,
     Agriculture and Biology,
-    Errol Road,
-    Invergowrie,
-    Dundee,
-    DD6 9LH,
+    Shanghai Jiao Tong University,
     ShangHai,
     CN
 
