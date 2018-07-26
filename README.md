@@ -53,6 +53,11 @@ For example you may type:
 ```
 aimap.py -o /path/to/result -g /path/to/genome/file -a /path/to/annotation/file --outfile_name sample_name -f1 /path/to/r1.fastq -f2 /path/to/r2.fastq -m paired -t 4
 ```
+
+## result
+
+At last, you will get a result file, it will be separated by “\t”.
+
 ## Licensing
 
 Unless otherwise indicated, all code is subject to the following agreement:
