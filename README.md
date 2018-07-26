@@ -49,7 +49,7 @@ usage: aimap.py [-h] [--version] -o OUTDIRNAME -g GENOMENAME -a ANNOTATION
 
 […]
 ```
-
+For example you may type
 ## Licensing
 
 Unless otherwise indicated, all code is subject to the following agreement:
