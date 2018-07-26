@@ -5,7 +5,7 @@ The pipeline integrates reads quality control, adaptor removal, reference genome
 
 `aimap` installs one scripts into the `$PATH`:
 
-* `aimap.py` that enables command-line A to I analysis.
+* `Adenosine_to_inosine.py` that enables command-line A to I analysis.
 
 ## Installation
 
@@ -35,9 +35,9 @@ Note that Python package dependencies should automatically be installed
 
 ## Running `aimap`
 
-The `aimap.py` script - installed as part of this package - enables straightforward ANI analysis at the command-line, and uses the `aimap` module behind the scenes.
+The `Adenosine_to_inosine.py` script - installed as part of this package - enables straightforward ANI analysis at the command-line, and uses the `aimap` module behind the scenes.
 
-You can get a summary of available command-line options with `aimap.py -h`
+You can get a summary of available command-line options with `Adenosine_to_inosine.py -h`
 
 ```
 $ aimap.py -h
@@ -51,7 +51,7 @@ usage: aimap.py [-h] [--version] -o OUTDIRNAME -g GENOMENAME -a ANNOTATION
 ```
 For example you may type:
 ```
-aimap.py -o /path/to/result -g /path/to/genome/file -a /path/to/annotation/file --outfile_name sample_name -f1 /path/to/r1.fastq -f2 /path/to/r2.fastq -m paired -t 4
+Adenosine_to_inosine.py -o /path/to/result -g /path/to/genome/file -a /path/to/annotation/file --outfile_name sample_name -f1 /path/to/r1.fastq -f2 /path/to/r2.fastq -m paired -t 4
 ```
 
 ## Result
