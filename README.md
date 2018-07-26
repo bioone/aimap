@@ -40,7 +40,7 @@ The `Adenosine_to_inosine.py` script - installed as part of this package - enabl
 You can get a summary of available command-line options with `Adenosine_to_inosine.py -h`
 
 ```
-$ aimap.py -h
+$ Adenosine_to_inosine.py -h
 usage: aimap.py [-h] [--version] -o OUTDIRNAME -g GENOMENAME -a ANNOTATION
                 --outfile_name OUTFILE_NAME [-l LENGTH] [-f FILENAME]
                 [-f1 FILENAME1] [-f2 FILENAME2] [-m {single,paired}]
