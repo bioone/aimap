@@ -61,6 +61,6 @@ Step 4: Install aimap
 pip3 install aimap
 
 #test
-aimap.py -h
+Adenosine_to_inosine.py -h
 
 Finish!
