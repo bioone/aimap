@@ -3,7 +3,7 @@ Installation Instructions
 
 Copyright (C) 2018-2023 Agriculture and Biology
 
-Quickly install in ubuntu 16.04
+Quickly install in ubuntu 22.04
 ==================
 
 Step 1: Python Dependencies
@@ -59,6 +59,9 @@ Step 3: Other Dependencies
 
 ### Install samtools
 `sudo apt-get install samtools`
+
+### Install bcftools
+`sudo apt-get install bcftools`
 
 Step 4: Install aimap
 ---------------------
