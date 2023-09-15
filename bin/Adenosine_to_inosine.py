@@ -65,15 +65,6 @@ def parse_cmdline():
     parser.add_argument("--logfile", dest="logfile",
                         action="store", default=None,
                         help="Logfile location")
-    parser.add_argument("--editing_level", dest="editing_level",
-                        action="store", default=0.03, 
-                        help="A-I editing_level,discard position that became lower than editing_level. Default: 0.03")
-    parser.add_argument("--coverage", dest="coverage",
-                        action="store", default=30, 
-                        help="Discard position that became lower than coverage INT. Default: 30")
-    parser.add_argument("-n", "--number", dest="reads_number",
-                        action="store", default=5, 
-                        help="Discard position that change reads number lower than reads number INT. Default: 5")    
     return parser.parse_args()
 
 	# Report last exception as string
