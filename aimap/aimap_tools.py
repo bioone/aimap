@@ -14,7 +14,7 @@ import pandas as pd
 from Bio import SeqIO
 from Bio.Seq import MutableSeq
 from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
+#from Bio.Alphabet import IUPAC
 from Bio.SeqRecord import SeqRecord
 from . import aimap_config
 import bisect
@@ -124,9 +124,9 @@ def get_founction_Prokaryote(infile,outdir,outname,genomefile,anno_file):
                         if (oldbase=="A" or oldbase=="a") or (oldbase=="C" or oldbase=="c"):
                             change_loc=position-db[id].start
                             old_seq=Seq(db[id].sequence("%s"% genomefile, use_strand=False))
-                            new_seq = old_seq.tomutable()
+                            new_seq = MutableSeq(old_seq)
                             new_seq[change_loc] = newbase
-                            new_seq=new_seq.toseq()
+                            new_seq=Seq(new_seq)
                             CDS_id=[h.id for h in db.children(id,featuretype="CDS")][0]
                             product=db[CDS_id].attributes['product'][0]
                             old_pro=old_seq.translate()
@@ -149,9 +149,9 @@ def get_founction_Prokaryote(infile,outdir,outname,genomefile,anno_file):
                         if (oldbase=="T" or oldbase=="t") or (oldbase=="G" or oldbase=="g"):
                             change_loc=position-db[id].start
                             old_seq=Seq(db[id].sequence("%s"% genomefile, use_strand=False))
-                            new_seq = old_seq.tomutable()
+                            new_seq = MutableSeq(old_seq)
                             new_seq[change_loc] = newbase
-                            new_seq=new_seq.toseq()
+                            new_seq=Seq(new_seq)
                             CDS_id=[h.id for h in db.children(id,featuretype="CDS")][0]
                             product=db[CDS_id].attributes['product'][0]
                             old_seq=old_seq.reverse_complement()
