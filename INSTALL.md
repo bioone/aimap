@@ -25,9 +25,11 @@ Step 2: Trim_galore Installation
 --------------------------------
 
 #Install cutadapt
+
 `pip3 install --user --upgrade cutadapt`
 
 #Install fastqc
+
 `sudo apt-get install fastqc`
 
 # Check that cutadapt is installed
