@@ -1,4 +1,4 @@
-# Copyright 2018-2019, Agriculture and Biology
+# Copyright 2018-2013, Agriculture and Biology
 # Author: Sai Wang
 #
 # This code is part of the aimap package, and is governed by its licence.
@@ -13,3 +13,5 @@
 TRIM_GALORE_DEFAULT = "trim_galore"
 BWA_DEFAULT = "bwa"
 SAMTOOLS_DEFAULT = "samtools"
+BCFTOOLS_DEFAULT = "bcftools"
+
