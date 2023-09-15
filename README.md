@@ -30,6 +30,7 @@ Note that Python package dependencies should automatically be installed
 * **trim_galore** <http://www.bioinformatics.babraham.ac.uk/projects/trim_galore/>
 * **BWA** <https://github.com/lh3/bwa>
 * **Samtools** <http://www.htslib.org/>
+* * **Bcfools** <http://www.htslib.org/>
 
 **Note that you can find the full install instruction in install file.**
 
@@ -45,7 +46,7 @@ usage: Adenosine_to_inosine.py [-h] [--version] -o OUTDIRNAME -g GENOMENAME -a A
                 --outfile_name OUTFILE_NAME [-l LENGTH] [-f FILENAME]
                 [-f1 FILENAME1] [-f2 FILENAME2] [-m {single,paired}]
                 [-t THREADS] [--logfile LOGFILE]
-                [--editing_level EDITING_LEVEL] [--coverage COVERAGE]
+                
 
 […]
 ```
