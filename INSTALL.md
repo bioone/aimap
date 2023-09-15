@@ -17,7 +17,7 @@ gffutils
 
 These can be installed with pip3 using:
 
-pip3 install -r requirements.txt
+`pip3 install -r requirements.txt`
 
 #Note that Python package dependencies should automatically be installed.
 
@@ -25,21 +25,22 @@ Step 2: Trim_galore Installation
 --------------------------------
 
 #Install cutadapt
-pip3 install --user --upgrade cutadapt
+`pip3 install --user --upgrade cutadapt`
 
 #Install fastqc
-sudo apt-get install fastqc
+`sudo apt-get install fastqc`
 
 # Check that cutadapt is installed
-cutadapt --version
+`cutadapt --version`
 
 # Check that FastQC is installed
-fastqc -v
+`fastqc -v`
 
 # Install Trim Galore
+```
 curl -fsSL https://github.com/FelixKrueger/TrimGalore/archive/0.4.5.tar.gz -o trim_galore.tar.gz
 tar xvzf trim_galore.tar.gz
-
+```
 #Add Trim Galore path to $PATH environment variable
 vi /etc/environment
 add "PATH=$PATH:/path/to/Trim Galore" 
