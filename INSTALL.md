@@ -40,7 +40,7 @@ Step 2: Trim_galore Installation
 
 ### Install Trim Galore
 ```
-curl -fsSL https://github.com/FelixKrueger/TrimGalore/archive/0.4.5.tar.gz -o trim_galore.tar.gz
+curl -fsSL https://github.com/FelixKrueger/TrimGalore/archive/0.6.10.tar.gz -o trim_galore.tar.gz
 tar xvzf trim_galore.tar.gz
 ```
 ### Add Trim Galore path to $PATH environment variable
