@@ -46,7 +46,7 @@ tar xvzf trim_galore.tar.gz
 ### Add Trim Galore path to $PATH environment variable
 ```
 vi /etc/environment
-add "PATH=$PATH:/path/to/Trim Galore" 
+add "export PATH=$PATH:/path/to/Trim Galore:$PATH" 
 source /etc/environment
 ```
 
