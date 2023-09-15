@@ -44,26 +44,30 @@ curl -fsSL https://github.com/FelixKrueger/TrimGalore/archive/0.4.5.tar.gz -o tr
 tar xvzf trim_galore.tar.gz
 ```
 #Add Trim Galore path to $PATH environment variable
+```
 vi /etc/environment
 add "PATH=$PATH:/path/to/Trim Galore" 
 source /etc/environment
+```
 
 Step 3: Other Dependencies
 ---------------------------
 
 #Install BWA
-sudo apt-get install bwa
+
+`sudo apt-get install bwa`
 
 #Install samtools
-sudo apt-get install samtools
+`sudo apt-get install samtools`
 
 Step 4: Install aimap
 ---------------------
 
 #Install aimap
-pip3 install aimap
+
+`pip3 install aimap`
 
 #test
-Adenosine_to_inosine.py -h
+`Adenosine_to_inosine.py -h`
 
 Finish!
