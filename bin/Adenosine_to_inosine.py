@@ -1,6 +1,6 @@
-#!/usr/bin/env python3 
+#!/usr/bin/python3
 #
-# aimap.py
+# Adenosine_to_inosine.py
 #
 # This code is part of the aimap package, and is governed by its licence.
 # Please see the LICENSE file that should have been included as part of
@@ -28,7 +28,7 @@ from aimap import __version__ as VERSION
 # Process command-line arguments
 def parse_cmdline():
     """Parse command-line arguments for script."""
-    parser = ArgumentParser(prog="aimap.py")
+    parser = ArgumentParser(prog="Adenosine_to_inosine.py")
     parser.add_argument('--version', action='version',
                         version='%(prog)s: aimap ' + VERSION)
     parser.add_argument("-o", "--outdir", dest="outdirname",
@@ -70,7 +70,10 @@ def parse_cmdline():
                         help="A-I editing_level,discard position that became lower than editing_level. Default: 0.03")
     parser.add_argument("--coverage", dest="coverage",
                         action="store", default=30, 
-                        help="Discard position that became lower than coverage INT. Default: 30")    
+                        help="Discard position that became lower than coverage INT. Default: 30")
+    parser.add_argument("-n", "--number", dest="reads_number",
+                        action="store", default=5, 
+                        help="Discard position that change reads number lower than reads number INT. Default: 5")    
     return parser.parse_args()
 
 	# Report last exception as string
@@ -172,44 +175,89 @@ if __name__ == '__main__':
         old_file=os.path.splitext(os.path.split(args.filename)[1])[0]
         new_file=args.outdirname+"/"+old_file+"_trimmed.fq"
         os.system(aimap_tools.construct_bwa_mem_single_cmdline(args.genomename, new_file,args.outdirname,args.outfile_name,args.threads))
+        
+        #Step4 Sort the bam file.
+        logger.info("Step4 Sort the bam file.")
+        insamfile=args.outdirname+"/"+args.outfile_name+".sam"        
+        os.system(aimap_tools.construct_samtools_sort_cmdline(insamfile,args.outdirname,args.outfile_name,args.threads)) 
+                        
+        #Step5 Generate bcf for one or multiple BAM files
+        logger.info("Generate bcf for one or multiple BAM files")
+        inbamfile=args.outdirname+"/"+args.outfile_name+"-sorted.bam"
+        os.system(aimap_tools.construct_bcftools_mpileup_cmdline(inbamfile,args.genomename,args.outdirname,args.outfile_name,args.threads))
+        
+        #Step6 Generate vcf for bcf file.
+        logger.info("Step6 Generate vcf for bcf file.")
+        bcf_file=args.outdirname+"/"+args.outfile_name+".bcf"
+        os.system(aimap_tools.construct_bcftools_call_cmdline(bcf_file,args.outdirname,args.outfile_name,args.threads))
+        
+        #Step7 Vcf file filt.
+        logger.info("Step7 Vcf file filt.")
+        vcf_file=args.outdirname+"/"+args.outfile_name+".vcf"
+        os.system(aimap_tools.construct_bcftools_view_cmdline(vcf_file,args.outdirname,args.outfile_name,args.threads))
+     
+        #Step8 Get DP and DP4 information.
+        logger.info("Get DP and DP4 information.")
+        vcf_filt_file=args.outdirname+"/"+args.outfile_name+"-filt.vcf"
+        os.system(aimap_tools.construct_bcftools_query_cmdline(vcf_filt_file,args.outdirname,args.outfile_name))
+        
+        #Step7 Convert vcf file to table.
+        logger.info("Step7 Convert vcf file to table.")
+        tab_file=args.outdirname+"/"+args.outfile_name+".tab"
+        aimap_tools.convert_pileup_to_table(tab_file,args.outdirname,args.outfile_name)
+    	
+        #Step10 Confirm whether the amino acid has changed.
+        logger.info("Step10 Confirm whether the amino acid has changed.")
+        a_i_file=args.outdirname+"/"+args.outfile_name+"_modification.txt"
+        aimap_tools.get_founction_Prokaryote(a_i_file,args.outdirname,args.outfile_name,args.genomename,args.annotation)
+
+        # Report that we've finished
+        logger.info("Done: %s.", time.asctime())
+        logger.info("Time taken: %.2fs", (time.time() - t0))
+        
     if args.model == "paired":
         old_file1=os.path.splitext(os.path.split(args.filename1)[1])[0]
         old_file2=os.path.splitext(os.path.split(args.filename2)[1])[0]
         new_file1=args.outdirname+"/"+old_file1+"_val_1.fq"
         new_file2=args.outdirname+"/"+old_file2+"_val_2.fq"
-        os.system(aimap_tools.construct_bwa_mem_paired_cmdline(args.genomename, new_file1,new_file2,args.outdirname,args.outfile_name,args.threads))    
-	
-    #Step4 Convert sam file to bam file.
-    logger.info("Step4 Convert sam file to bam file.")
-    insamfile=args.outdirname+"/"+args.outfile_name+".sam"
-    os.system(aimap_tools.construct_samtools_view_cmdline(insamfile,args.outdirname,args.outfile_name,args.threads))
-	
-    #Step5 Sort the bam file.
-    logger.info("Step5 Sort the bam file.")
-    inbamfile=args.outdirname+"/"+args.outfile_name+".bam"
-    os.system(aimap_tools.construct_samtools_sort_cmdline(inbamfile,args.outdirname,args.outfile_name,args.threads))
-    	
-    #Step6 Generate pileup for one or multiple BAM files.
-    logger.info("Step6 Generate pileup for one or multiple BAM files.")
-    sorted_bamfile=args.outdirname+"/"+args.outfile_name+"-sorted.bam"
-    os.system(aimap_tools.construct_samtools_mpileup_cmdline(sorted_bamfile,args.genomename,args.outdirname,args.outfile_name,args.threads))
-    
-    #Step7 Convert pileup file to table.
-    logger.info("Step7 Convert pileup file to table.")
-    pileup_file=args.outdirname+"/"+args.outfile_name+".pileup"
-    aimap_tools.convert_pileup_to_table(pileup_file,args.outdirname,args.outfile_name)
+        os.system(aimap_tools.construct_bwa_mem_paired_cmdline(args.genomename, new_file1,new_file2,args.outdirname,args.outfile_name,args.threads))
+        
+        #Step4 Sort the bam file.
+        logger.info("Step4 Sort the bam file.")
+        insamfile=args.outdirname+"/"+args.outfile_name+".sam"        
+        os.system(aimap_tools.construct_samtools_sort_cmdline(insamfile,args.outdirname,args.outfile_name,args.threads)) 
+                        
+        #Step5 Generate bcf for one or multiple BAM files
+        logger.info("Generate bcf for one or multiple BAM files")
+        inbamfile=args.outdirname+"/"+args.outfile_name+"-sorted.bam"
+        os.system(aimap_tools.construct_bcftools_mpileup_cmdline(inbamfile,args.genomename,args.outdirname,args.outfile_name,args.threads))
+        
+        #Step6 Generate vcf for bcf file.
+        logger.info("Step6 Generate vcf for bcf file.")
+        bcf_file=args.outdirname+"/"+args.outfile_name+".bcf"
+        os.system(aimap_tools.construct_bcftools_call_cmdline(bcf_file,args.outdirname,args.outfile_name,args.threads))
+        
+        #Step7 Vcf file filt.
+        logger.info("Step7 Vcf file filt.")
+        vcf_file=args.outdirname+"/"+args.outfile_name+".vcf"
+        os.system(aimap_tools.construct_bcftools_view_cmdline(vcf_file,args.outdirname,args.outfile_name,args.threads))
      
-    #Step8 Get a_i position.
-    logger.info("Step8 Get a_i position.")
-    all_info_file=args.outdirname+"/"+args.outfile_name+"_all_position_info.txt"
-    aimap_tools.get_a_i_map(all_info_file,args.outdirname,args.outfile_name,args.coverage,args.editing_level)
+        #Step8 Get DP and DP4 information.
+        logger.info("Get DP and DP4 information.")
+        vcf_filt_file=args.outdirname+"/"+args.outfile_name+"-filt.vcf"
+        os.system(aimap_tools.construct_bcftools_query_cmdline(vcf_filt_file,args.outdirname,args.outfile_name))
+        
+        #Step7 Convert vcf file to table.
+        logger.info("Step7 Convert vcf file to table.")
+        tab_file=args.outdirname+"/"+args.outfile_name+".tab"
+        aimap_tools.convert_pileup_to_table(tab_file,args.outdirname,args.outfile_name)
     	
-    #Step9 Confirm whether the amino acid has changed.
-    logger.info("Step9 Confirm whether the amino acid has changed.")
-    a_i_file=args.outdirname+"/"+args.outfile_name+"_a_i.txt"
-    aimap_tools.get_founction_Prokaryote(a_i_file,args.outdirname,args.outfile_name,args.genomename,args.annotation)
+        #Step10 Confirm whether the amino acid has changed.
+        logger.info("Step10 Confirm whether the amino acid has changed.")
+        a_i_file=args.outdirname+"/"+args.outfile_name+"_modification.txt"
+        aimap_tools.get_founction_Prokaryote(a_i_file,args.outdirname,args.outfile_name,args.genomename,args.annotation)
 
     		
-    # Report that we've finished
-    logger.info("Done: %s.", time.asctime())
-    logger.info("Time taken: %.2fs", (time.time() - t0))
+        # Report that we've finished
+        logger.info("Done: %s.", time.asctime())
+        logger.info("Time taken: %.2fs", (time.time() - t0))
