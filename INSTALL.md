@@ -70,7 +70,7 @@ Step 4: Install aimap
 
 `pip3 install aimap`
 
-·chmod a+x /usr/local/bin/Adenosine_to_inosine.py·
+` chmod a+x /usr/local/bin/Adenosine_to_inosine.py `
 
 ### test
 
