@@ -30,7 +30,7 @@ Note that Python package dependencies should automatically be installed
 * **trim_galore** <http://www.bioinformatics.babraham.ac.uk/projects/trim_galore/>
 * **BWA** <https://github.com/lh3/bwa>
 * **Samtools** <http://www.htslib.org/>
-* * **Bcfools** <http://www.htslib.org/>
+* **Bcfools** <http://www.htslib.org/>
 
 **Note that you can find the full install instruction in install file.**
 
