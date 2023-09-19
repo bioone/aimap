@@ -121,7 +121,7 @@ def get_founction_Prokaryote(infile,outdir,outname,genomefile,anno_file):
                 id=id_list[idx]
                 if db[id].seqid == accession and db[id].attributes['gene_biotype'][0]=="protein_coding":
                     if db[id].strand== "+":
-                        if (oldbase=="A" or oldbase=="a") or (oldbase=="C" or oldbase=="c"):
+                        if (oldbase=="A" or oldbase=="a") and (newbase=="G" or oldbase=="g"):
                             change_loc=position-db[id].start
                             old_seq=Seq(db[id].sequence("%s"% genomefile, use_strand=False))
                             new_seq = MutableSeq(old_seq)
@@ -146,7 +146,7 @@ def get_founction_Prokaryote(infile,outdir,outname,genomefile,anno_file):
                                                               +"\t"+str(linsplit[8])+"\t"+str(linsplit[9])+"\t"+"CDS"+"\t"+db[id].attributes['Name'][0]
                                                               +"\t"+"+"+"\t"+str(product)+"\t"+old_pro[n]+str(n+1)+new_pro[n]+"\n")
                     if db[id].strand== "-" :
-                        if (oldbase=="T" or oldbase=="t") or (oldbase=="G" or oldbase=="g"):
+                        if (oldbase=="T" or oldbase=="t") and (oldbase=="C" or oldbase=="c"):
                             change_loc=position-db[id].start
                             old_seq=Seq(db[id].sequence("%s"% genomefile, use_strand=False))
                             new_seq = MutableSeq(old_seq)
