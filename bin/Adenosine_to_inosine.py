@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 #
 # Adenosine_to_inosine.py
 #
@@ -12,7 +12,6 @@ import logging.handlers
 import os
 import subprocess
 import pandas as pd
-import gffutils
 import random
 import shutil
 import sys
@@ -145,7 +144,7 @@ if __name__ == '__main__':
             logger.error("No fastq file name (exiting)")
             sys.exit(1)
         else:
-            os.system(aimap_tools.construct_trim_galore_single_cmdline(args.outdirname,args.length,args.filename))
+            os.system(aimap_tools.construct_fastp_single_cmdline(args.outdirname,args.outfile_name,args.length,args.filename,args.threads))
     if args.model == "paired":
         if args.filename1 is None:
             logger.error("No required fastq file1 name (exiting)")
@@ -154,7 +153,9 @@ if __name__ == '__main__':
             logger.error("No required fastq file2 name (exiting)")
             sys.exit(1)
         else:
-           os.system(aimap_tools.construct_trim_galore_paired_cmdline(args.outdirname,args.length,args.filename1,args.filename2))
+            outname1=args.outdirname+"/"+args.outfile_name+"_val_1.fq"
+            outname2=args.outdirname+"/"+args.outfile_name+"_val_2.fq"
+            os.system(aimap_tools.construct_fastp_paired_cmdline(args.filename1,args.filename2,outname1,outname2,args.length,args.threads))
 							
     #Step2 Index genome sequences in the FASTA format.
     logger.info("Step2 Index sequences in the FASTA format.")
@@ -164,7 +165,7 @@ if __name__ == '__main__':
     logger.info("Step3 Map reads to genome.")
     if args.model == "single":
         old_file=os.path.splitext(os.path.split(args.filename)[1])[0]
-        new_file=args.outdirname+"/"+old_file+"_trimmed.fq"
+        new_file=args.outdirname+"/"+args.outfile_name+".fq"
         os.system(aimap_tools.construct_bwa_mem_single_cmdline(args.genomename, new_file,args.outdirname,args.outfile_name,args.threads))
         
         #Step4 Sort the bam file.
@@ -188,30 +189,38 @@ if __name__ == '__main__':
         os.system(aimap_tools.construct_bcftools_view_cmdline(vcf_file,args.outdirname,args.outfile_name,args.threads))
      
         #Step8 Get DP and DP4 information.
-        logger.info("Get DP and DP4 information.")
+        logger.info("Step8 Get DP and DP4 information.")
         vcf_filt_file=args.outdirname+"/"+args.outfile_name+"-filt.vcf"
         os.system(aimap_tools.construct_bcftools_query_cmdline(vcf_filt_file,args.outdirname,args.outfile_name))
         
-        #Step7 Convert vcf file to table.
-        logger.info("Step7 Convert vcf file to table.")
+        #Step9 Convert vcf file to table.
+        logger.info("Step9 Convert vcf file to table.")
         tab_file=args.outdirname+"/"+args.outfile_name+".tab"
         aimap_tools.convert_pileup_to_table(tab_file,args.outdirname,args.outfile_name)
-    	
-        #Step10 Confirm whether the amino acid has changed.
-        logger.info("Step10 Confirm whether the amino acid has changed.")
+        
+        #Step10 get anno file.
+        logger.info("Step10 Get anno file.")
+        aimap_tools.get_anno_file(args.annotation,args.outdirname)
+        
+        #Step11 Confirm whether the amino acid has changed.
+        logger.info("Step11 Confirm whether the amino acid has changed.")
         a_i_file=args.outdirname+"/"+args.outfile_name+"_modification.txt"
-        aimap_tools.get_founction_Prokaryote(a_i_file,args.outdirname,args.outfile_name,args.genomename,args.annotation)
+        anno_file=args.outdirname+"/genome_new_anno.tsv"
+        aimap_tools.get_founction_Prokaryote(a_i_file,args.outdirname,args.outfile_name,args.genomename,anno_file)
+        
+        #Step12 Get last A_I result file.
+        logger.info("Step12 Get last A_I result file.")
+        infile=args.outdirname+"/"+args.outfile_name+"_full_result.txt"
+        aimap_tools.get_A_I_result(infile,args.outdirname,args.outfile_name)
 
         # Report that we've finished
         logger.info("Done: %s.", time.asctime())
         logger.info("Time taken: %.2fs", (time.time() - t0))
         
     if args.model == "paired":
-        old_file1=os.path.splitext(os.path.split(args.filename1)[1])[0]
-        old_file2=os.path.splitext(os.path.split(args.filename2)[1])[0]
-        new_file1=args.outdirname+"/"+old_file1+"_val_1.fq"
-        new_file2=args.outdirname+"/"+old_file2+"_val_2.fq"
-        os.system(aimap_tools.construct_bwa_mem_paired_cmdline(args.genomename, new_file1,new_file2,args.outdirname,args.outfile_name,args.threads))
+        outname1=args.outdirname+"/"+args.outfile_name+"_val_1.fq"
+        outname2=args.outdirname+"/"+args.outfile_name+"_val_2.fq"
+        os.system(aimap_tools.construct_bwa_mem_paired_cmdline(args.genomename, outname1,outname2,args.outdirname,args.outfile_name,args.threads))
         
         #Step4 Sort the bam file.
         logger.info("Step4 Sort the bam file.")
@@ -238,15 +247,34 @@ if __name__ == '__main__':
         vcf_filt_file=args.outdirname+"/"+args.outfile_name+"-filt.vcf"
         os.system(aimap_tools.construct_bcftools_query_cmdline(vcf_filt_file,args.outdirname,args.outfile_name))
         
-        #Step7 Convert vcf file to table.
-        logger.info("Step7 Convert vcf file to table.")
+        #Step9 Convert vcf file to table.
+        logger.info("Step9 Convert vcf file to table.")
         tab_file=args.outdirname+"/"+args.outfile_name+".tab"
         aimap_tools.convert_pileup_to_table(tab_file,args.outdirname,args.outfile_name)
-    	
-        #Step10 Confirm whether the amino acid has changed.
-        logger.info("Step10 Confirm whether the amino acid has changed.")
+        
+        #Step10 get anno file.
+        logger.info("Step10 Get anno file.")
+        aimap_tools.get_anno_file(args.annotation,args.outdirname)
+        
+        #Step11 Confirm whether the amino acid has changed.
+        logger.info("Step11 Confirm whether the amino acid has changed.")
         a_i_file=args.outdirname+"/"+args.outfile_name+"_modification.txt"
-        aimap_tools.get_founction_Prokaryote(a_i_file,args.outdirname,args.outfile_name,args.genomename,args.annotation)
+        anno_file=args.outdirname+"/genome_new_anno.tsv"
+        aimap_tools.get_founction_Prokaryote(a_i_file,args.outdirname,args.outfile_name,args.genomename,anno_file)
+        
+        #Step12 Get last A_I result file.
+        logger.info("Step12 Get last A_I result file.")
+        infile=args.outdirname+"/"+args.outfile_name+"_full_result.txt"
+        aimap_tools.get_A_I_result(infile,args.outdirname,args.outfile_name)
+        
+        
+        #remove temp_file
+        # aimap_output_dir=args.outdirname.rsplit("/",1)[0]
+        # os.system("rm -rf %s/*.fastq" %(aimap_output_dir))
+        # os.system("rm -rf %s/*.sam" %(args.outdirname))
+        # os.system("rm -rf %s/*.bam" %(args.outdirname))
+        # os.system("rm -rf %s/*.bcf" %(args.outdirname))
+        # os.system("rm -rf %s/*.fq" %(args.outdirname))
 
     		
         # Report that we've finished
