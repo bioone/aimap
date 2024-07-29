@@ -1,4 +1,4 @@
-# Copyright 2018-2023, Agriculture and Biology
+# Copyright 2018-2024, Agriculture and Biology
 # Author: sai wang
 #
 # This code is part of the aimap package, and is governed by its licence.
@@ -6,8 +6,6 @@
 # this package.
 
 import os
-import shutil
-import gffutils
 
 import pandas as pd
 
@@ -19,25 +17,25 @@ from Bio.SeqRecord import SeqRecord
 from . import aimap_config
 import bisect
 
-# Generate single TRIM_GALORE command line
-def construct_trim_galore_single_cmdline(outdir,length,fname,
-                               trim_galore_exe=aimap_config.TRIM_GALORE_DEFAULT):
-    """Returns a single trim_galore command.
+# Generate single FASTP command line
+def construct_fastp_single_cmdline(outdir, outname,length, fname,threads,
+                               fastp_exe=aimap_config.FASTP_DEFAULT):
+    """Returns a single fastp command.
 
-    - trim_galore_exe - path to TRIM_GALORE executable
+    - fastp_exe - path to FASTP executable
     """
-    cmd="{0} -O {1} -q 30 --phred33 --trim-n --length {2} {3}"
-    return cmd.format(trim_galore_exe, outdir, length, fname)
+    cmd="{0} -o {1}/{2}.fq -q 30 -l {3} -i {4} -w {5}"
+    return cmd.format(fastp_exe, outdir, outname,length, fname,threads)
 
 
-def construct_trim_galore_paired_cmdline(outdir,length,fname1,fname2,
-                               trim_galore_exe=aimap_config.TRIM_GALORE_DEFAULT):
-    """Returns a paired trim_galore command.
+def construct_fastp_paired_cmdline(fname1,fname2, outname1, outname2,length,threads,
+                               fastp_exe=aimap_config.FASTP_DEFAULT):
+    """Returns a paired fastp command.
 
-    - trim_galore_exe - path to TRIM_GALORE executable
+    - fastp_exe - path to FASTP executable
     """
-    cmd="{0} -O {1} -q 30 --phred33 --trim-n --length {2} --paired {3} {4}"
-    return cmd.format(trim_galore_exe, outdir, length, fname1,fname2)
+    cmd="{0} -i {1} -I {2} -o {3} -O {4} -q 30 -l {5} -w {6}"
+    return cmd.format(fastp_exe,fname1,fname2, outname1, outname2,length,threads)
 
 
 def construct_bwa_index_cmdline(fname, bwa_exe=aimap_config.BWA_DEFAULT):
@@ -59,9 +57,9 @@ def construct_samtools_sort_cmdline(insamfile,outdir,outname,threads,samtools_ex
     return cmd.format(samtools_exe,threads,outdir,outname, insamfile)
     
 def construct_bcftools_mpileup_cmdline(sorted_bamfile,genome,outdir,outname,threads,bcftools_exe=aimap_config.BCFTOOLS_DEFAULT):
-    cmd = "{0} mpileup --threads {1} -d 50000 -f {2} {3} -o {4}/{5}.bcf"
+    cmd = "{0} mpileup --threads {1} -d 50000 -L 50000 -f {2} {3} -o {4}/{5}.bcf -Q 0 -q 0 -A"
     return cmd.format(bcftools_exe,threads,genome, sorted_bamfile,outdir,outname)
-    
+
 def construct_bcftools_call_cmdline(inbcffile,outdir,outname,threads,bcftools_exe=aimap_config.BCFTOOLS_DEFAULT):
     cmd = "{0} call -m -v -o {1}/{2}.vcf -O v --threads {3} {4}"
     return cmd.format(bcftools_exe,outdir,outname,threads, inbcffile)
@@ -73,7 +71,6 @@ def construct_bcftools_view_cmdline(invcffile,outdir,outname,threads,bcftools_ex
 def construct_bcftools_query_cmdline(invcffile,outdir,outname,bcftools_exe=aimap_config.BCFTOOLS_DEFAULT):
     cmd = "{0} query -f '%CHROM\t%POS\t%REF\t%ALT\t%DP\t%DP4\n' {1} >{2}/{3}.tab"
     return cmd.format(bcftools_exe, invcffile,outdir,outname)
-
 
 def convert_pileup_to_table(infile,outdir,outname):
     outfile = open("%s/%s_modification.txt" % (outdir, outname),"w")
@@ -98,15 +95,87 @@ def convert_pileup_to_table(infile,outdir,outname):
                 outfile.write(linsplit[0]+"\t"+linsplit[1]+"\t"+linsplit[2]+"\t"+linsplit[3]+"\t"+linsplit[4]+"\t"+str(h_t)+"\t"+str(t_al/float(h_t))+"\t"+str(t_al)+"\t"+str(r_al)+"\t"+str(l_al)+"\n") 
     outfile.close()
 
+def get_anno_file(anno_file,outdir):
+    file_id="genome"
+    output1=open(f"{outdir}/{file_id}_gene_anno.tsv","w")
+    output2=open(f"{outdir}/{file_id}_cds_anno.tsv","w")
+    temp_file=open(anno_file,"r")
+    for line in temp_file.readlines():
+        if line[0]=="#":
+            pass
+        elif line.split("\t")[2]=="gene" or line.split("\t")[2]=="pseudogene":
+            chr=line.split("\t")[0]
+            start=line.split("\t")[3]
+            end=line.split("\t")[4]
+            strand=line.split("\t")[6]
+            temp_dict=dict()
+            attr_list=line.strip().split("\t")[8].split(";")
+            for attr in attr_list:
+                temp_dict[attr.split("=")[0]]=attr.split("=")[1]
+            locus=temp_dict["locus_tag"]
+            if "gene" in temp_dict:
+                gene_name=temp_dict["gene"]
+            else:
+                gene_name="-"
+            if "gene_biotype" in temp_dict:
+                gene_bio_type=temp_dict["gene_biotype"]
+            else:
+                gene_bio_type="-"
+            
+            if "ID" in temp_dict:
+                gene_ID=temp_dict["ID"]
+            output1.write(f"{chr}\t{gene_ID}\t{locus}\t{gene_name}\t{gene_bio_type}\t{start}\t{end}\t{strand}\n")
+        elif line.split("\t")[2]=="CDS":
+            chr=line.split("\t")[0]
+            start=line.split("\t")[3]
+            end=line.split("\t")[4]
+            strand=line.split("\t")[6]
+            temp_dict=dict()
+            attr_list=line.strip().split("\t")[8].split(";")
+            for attr in attr_list:
+                temp_dict[attr.split("=")[0]]=attr.split("=")[1]
+            id="cds_"+str(start)+"_"+str(end)
+            if "Parent" in temp_dict:
+                locus_name=temp_dict["Parent"]
+            output2.write(f"{chr}\t{locus_name}\t{id}\t{start}\t{end}\t{strand}\n")
+            
+    output1.close()
+    output2.close()
+    df1=pd.read_csv(f"{outdir}/{file_id}_gene_anno.tsv",sep="\t",names=("chr","gene_ID","locus_tag","gene_name","gene_biotype","gene_start","gene_end","gene_strand"))
+    df2=pd.read_csv(f"{outdir}/{file_id}_cds_anno.tsv",sep="\t",names=("chr","gene_ID","cds_name","cds_start","cds_end","cds_strand"))
+    last_df=df1.merge(df2,how="left",on=["chr","gene_ID"])
+    last_df.to_csv(f"{outdir}/{file_id}_new_anno.tsv",sep="\t",index=False)
+
+
+base_dict={"T":"A","A":"T","C":"G","G":"C"}
+
+def extract_cds_from_genome(acc,seq_record,start,end,strand):
+    genome_len=len(str(seq_record.seq))
+    if strand=="+":
+        if end<=genome_len:
+            cds_seq=str(seq_record[start-1:end].seq)
+        elif end>genome_len:
+            cds1=str(seq_record[start-1:].seq)
+            cds2=str(seq_record[0:end-genome_len].seq)
+            cds_seq=cds1+cds2
+    elif strand=="-":
+        if end<=genome_len:
+            cds_seq=str(seq_record[start-1:end].reverse_complement().seq)
+        elif end>genome_len:
+            cds1=str(seq_record[start-1:].reverse_complement().seq)
+            cds2=str(seq_record[0:end-genome_len].reverse_complement().seq)
+            cds_seq=cds2+cds1
+    return Seq(cds_seq)
+
+
 def get_founction_Prokaryote(infile,outdir,outname,genomefile,anno_file):
+    anno_df=pd.read_csv(anno_file,sep="\t",header=0)
+    orchid_dict = SeqIO.to_dict(SeqIO.parse(genomefile, "fasta"))
     result_file=open("%s/%s_full_result.txt"%(outdir,outname),"w")
     result_file.write("Accession"+"\t"+"Position"+"\t"+"Old_base"+"\t"+"New_base"+"\t"+"Raw read depth"+"\t"+"Coverage"+"\t"+"Edit_level"+
-                  "\t"+"snp_coverage"+"\t"+"snp_f_coverage"+"\t"+"snp_r_coverage"+"\t"+"Gene_biotype"+"\t"+"Gene_name"+"\t"+"Gene_strand"+"\t"+"Product"+
-                  "\t"+"Amino acid_change"+"\n")
-    db = gffutils.create_db("%s"% anno_file, ':memory:', force=True, keep_order=True,merge_strategy='merge', id_spec="ID",sort_attribute_values=True)
-    start=[db[i.id].start for i in db.all_features(featuretype='gene')]
-    end=[db[i.id].end for i in db.all_features(featuretype='gene')]
-    id_list=[i.id for i in db.all_features(featuretype='gene')]
+                  "\t"+"snp_coverage"+"\t"+"snp_f_coverage"+"\t"+"snp_r_coverage"+"\t"+"Gene_biotype"+"\t"+"locus_tag"+"\t"+"Gene_name"+"\t"+"Gene_strand"+"\t"+"gene_start"+
+                  "\t"+"gene_end"+"\t"+"Amino acid_change"+"\t"+"codon_num"+"\n")
+
     with open('%s'% infile, 'r') as pileup:
         data=pileup.readlines()
         data=filter(None, data)
@@ -116,67 +185,176 @@ def get_founction_Prokaryote(infile,outdir,outname,genomefile,anno_file):
             position=int(linsplit[1])
             oldbase=linsplit[2]
             newbase=linsplit[3]
-            idx = bisect.bisect_left(end, position)
-            if idx < len(end) and start[idx] <= position <= end[idx]:
-                id=id_list[idx]
-                if db[id].seqid == accession and db[id].attributes['gene_biotype'][0]=="protein_coding":
-                    if db[id].strand== "+":
-                        if (oldbase=="A" or oldbase=="a") and (newbase=="G" or oldbase=="g"):
-                            change_loc=position-db[id].start
-                            old_seq=Seq(db[id].sequence("%s"% genomefile, use_strand=False))
+            temp_df=anno_df[(anno_df["chr"]==accession) & (anno_df["gene_start"] <= int(position)) & (anno_df["gene_end"]>= int(position))]
+            if len(list(temp_df["locus_tag"]))==0:
+                result_file.write(line.strip()+"\t"+"Intergenic region"+"\t"+" "+"\t"+" "
+                                                              +"\t"+" "+"\t"+" "+"\t"+" "+"\t"+"Intergenic region"+"\t\n")
+                
+            elif len(list(temp_df["locus_tag"]))==1:
+                gene_start=int(list(temp_df["gene_start"])[0])
+                gene_end=int(list(temp_df["gene_end"])[0])
+                gene_strand=list(temp_df["gene_strand"])[0]
+                gene_locus=list(temp_df["locus_tag"])[0]
+                gene_name=list(temp_df["gene_name"])[0]
+                gene_biotype=list(temp_df["gene_biotype"])[0]
+                if (gene_strand=="+") and (gene_biotype in ["-","protein_coding"]):
+                    gene_start=int(list(temp_df["cds_start"])[0])
+                    gene_end=int(list(temp_df["cds_end"])[0])
+                    change_loc=position-gene_start
+                    #old_seq=orchid_dict[accession].seq[(gene_start-1):gene_end]
+                    old_seq=extract_cds_from_genome(accession,orchid_dict[accession],gene_start,gene_end,gene_strand)
+                    new_seq = MutableSeq(old_seq)
+                    new_seq[change_loc] = newbase
+                    new_seq=Seq(new_seq)
+                    old_pro=old_seq.translate()
+                    new_pro=new_seq.translate()
+                    codon_num=(change_loc+1)%3
+                    if codon_num==0:
+                        last_codon=3
+                    else:
+                        last_codon=codon_num
+                    if old_pro==new_pro:
+                        result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                              +"\t"+"+"+"\t"+str(gene_start)+"\t"+str(gene_end)+"\t"+"no change"+"\t"+str(last_codon)+"\n")
+                        
+                    else:
+                        for n in range(len(old_pro)):
+                            if old_pro[n]==new_pro[n]:
+                                pass
+                            else:
+                                result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                              +"\t"+"+"+"\t"+str(gene_start)+"\t"+str(gene_end)+"\t"+old_pro[n]+str(n+1)+new_pro[n]+"\t"+str(last_codon)+"\n")
+                                continue
+                elif (gene_strand=="-") and (gene_biotype in ["-","protein_coding"]):
+                    gene_start=int(list(temp_df["cds_start"])[0])
+                    gene_end=int(list(temp_df["cds_end"])[0])
+                    change_loc=gene_end-position
+                    #old_seq=orchid_dict[accession].seq[(gene_start-1):gene_end]
+                    old_seq=extract_cds_from_genome(accession,orchid_dict[accession],gene_start,gene_end,gene_strand)
+                    new_seq = MutableSeq(old_seq)
+                    new_seq[change_loc] = base_dict[newbase]
+                    new_seq=Seq(new_seq)
+                    old_pro=old_seq.translate()
+                    new_pro=new_seq.translate()
+                    codon_num=(gene_end-position+1)%3
+                    if codon_num==0:
+                        last_codon=3
+                    else:
+                        last_codon=codon_num
+                    if old_pro==new_pro:
+                        result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                              +"\t"+"-"+"\t"+str(gene_start)+"\t"+str(gene_end)+"\t"+"no change"+"\t"+str(last_codon)+"\n")
+                    else:
+                        for n in range(len(old_pro)):
+                            if old_pro[n]==new_pro[n]:
+                                pass
+                            else:
+                                result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                              +"\t"+"-"+"\t"+str(gene_start)+"\t"+str(gene_end)+"\t"+old_pro[n]+str(n+1)+new_pro[n]+"\t"+str(last_codon)+"\n")
+                                continue
+                else:
+                    result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                        +"\t"+""+"\t"+str(gene_start)+"\t"+str(gene_end)+"\t"+""+"\t"+""+"\n")
+            elif len(list(temp_df["locus_tag"]))>1:
+                last_df=anno_df[(anno_df["chr"]==accession) & (anno_df["cds_start"] <= int(position)) & (anno_df["cds_end"]>= int(position))]
+                cds_locus=list(last_df["cds_name"])
+                if len(cds_locus)==1:
+                    cds_name=cds_locus[0]
+                    cds_start=int(list(last_df["cds_start"])[0])
+                    cds_end=int(list(last_df["cds_end"])[0])
+                    cds_strand=list(last_df["cds_strand"])[0]
+                    gene_biotype=list(last_df["gene_biotype"])[0]
+                    gene_locus=list(last_df["locus_tag"])[0]
+                    gene_name=list(last_df["gene_name"])[0]
+                    cds_len=cds_end-cds_start
+                    cds_filt=(cds_len+1)%3
+                    if cds_filt==0:
+                        if (cds_strand=="+") and (gene_biotype in ["-","protein_coding"]):
+                            change_loc=position-cds_start
+                            #old_seq=orchid_dict[accession].seq[(cds_start-1):cds_end]
+                            old_seq=extract_cds_from_genome(accession,orchid_dict[accession],cds_start,cds_end,cds_strand)
                             new_seq = MutableSeq(old_seq)
                             new_seq[change_loc] = newbase
                             new_seq=Seq(new_seq)
-                            CDS_id=[h.id for h in db.children(id,featuretype="CDS")][0]
-                            product=db[CDS_id].attributes['product'][0]
                             old_pro=old_seq.translate()
                             new_pro=new_seq.translate()
+                            codon_num=(change_loc+1)%3
+                            if codon_num==0:
+                                last_codon=3
+                            else:
+                                last_codon=codon_num
                             if old_pro==new_pro:
-                                result_file.write(str(accession)+"\t"+str(position)+"\t"+str(oldbase)+"\t"+str(newbase)+"\t"
-                                                              +str(linsplit[4])+"\t"+str(linsplit[5])+"\t"+str(linsplit[6])+"\t"+str(linsplit[7])
-                                                              +"\t"+str(linsplit[8])+"\t"+str(linsplit[9])+"\t"+"CDS"+"\t"+db[id].attributes['Name'][0]
-                                                              +"\t"+"+"+"\t"+str(product)+"\t"+"no change"+"\n")
+                                result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                                  +"\t"+"+"+"\t"+str(cds_start)+"\t"+str(cds_end)+"\t"+"no change"+"\t"+str(last_codon)+"\n")
                             else:
                                 for n in range(len(old_pro)):
                                     if old_pro[n]==new_pro[n]:
                                         pass
                                     else:
-                                        result_file.write(str(accession)+"\t"+str(position)+"\t"+str(oldbase)+"\t"+str(newbase)+"\t"
-                                                              +str(linsplit[4])+"\t"+str(linsplit[5])+"\t"+str(linsplit[6])+"\t"+str(linsplit[7])
-                                                              +"\t"+str(linsplit[8])+"\t"+str(linsplit[9])+"\t"+"CDS"+"\t"+db[id].attributes['Name'][0]
-                                                              +"\t"+"+"+"\t"+str(product)+"\t"+old_pro[n]+str(n+1)+new_pro[n]+"\n")
-                    if db[id].strand== "-" :
-                        if (oldbase=="T" or oldbase=="t") and (newbase=="C" or newbase=="c"):
-                            change_loc=position-db[id].start
-                            old_seq=Seq(db[id].sequence("%s"% genomefile, use_strand=False))
+                                        result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                                  +"\t"+"+"+"\t"+str(cds_start)+"\t"+str(cds_end)+"\t"+old_pro[n]+str(n+1)+new_pro[n]+"\t"+str(last_codon)+"\n")
+                                        continue
+                        elif (cds_strand=="-") and (gene_biotype in ["-","protein_coding"]):
+                            change_loc=cds_end-position
+                            #old_seq=orchid_dict[accession].seq[(cds_start-1):cds_end]
+                            old_seq=extract_cds_from_genome(accession,orchid_dict[accession],cds_start,cds_end,cds_strand)
                             new_seq = MutableSeq(old_seq)
-                            new_seq[change_loc] = newbase
+                            new_seq[change_loc] = base_dict[newbase]
                             new_seq=Seq(new_seq)
-                            CDS_id=[h.id for h in db.children(id,featuretype="CDS")][0]
-                            product=db[CDS_id].attributes['product'][0]
-                            old_seq=old_seq.reverse_complement()
-                            new_seq=new_seq.reverse_complement()
                             old_pro=old_seq.translate()
                             new_pro=new_seq.translate()
+                            codon_num=(cds_end-position+1)%3
+                            if codon_num==0:
+                                last_codon=3
+                            else:
+                                last_codon=codon_num
                             if old_pro==new_pro:
-                                result_file.write(str(accession)+"\t"+str(position)+"\t"+str(oldbase)+"\t"+str(newbase)+"\t"
-                                                              +str(linsplit[4])+"\t"+str(linsplit[5])+"\t"+str(linsplit[6])+"\t"+str(linsplit[7])
-                                                              +"\t"+str(linsplit[8])+"\t"+str(linsplit[9])+"\t"+"CDS"+"\t"+db[id].attributes['Name'][0]
-                                                              +"\t"+"+"+"\t"+str(product)+"\t"+"no change"+"\n")                            
+                                result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                                  +"\t"+"-"+"\t"+str(cds_start)+"\t"+str(cds_end)+"\t"+"no change"+"\t"+str(last_codon)+"\n")
                             else:
                                 for n in range(len(old_pro)):
                                     if old_pro[n]==new_pro[n]:
                                         pass
                                     else:
-                                        result_file.write(str(accession)+"\t"+str(position)+"\t"+str(oldbase)+"\t"+str(newbase)+"\t"
-                                                              +str(linsplit[4])+"\t"+str(linsplit[5])+"\t"+str(linsplit[6])+"\t"+str(linsplit[7])
-                                                              +"\t"+str(linsplit[8])+"\t"+str(linsplit[9])+"\t"+"CDS"+"\t"+db[id].attributes['Name'][0]
-                                                              +"\t"+"-"+"\t"+str(product)+"\t"+old_pro[n]+str(n+1)+new_pro[n]+"\n")
-                if db[id].seqid == accession and db[id].attributes['gene_biotype'][0]!="protein_coding":
-                    result_file.write(str(accession)+"\t"+str(position)+"\t"+str(oldbase)+"\t"+str(newbase)+"\t"+str(linsplit[4])+"\t"+str(linsplit[5])+"\t"+str(linsplit[6])+"\t"+str(linsplit[7])
-                                                              +"\t"+str(linsplit[8])+"\t"+str(linsplit[9])+"\t"+db[id].attributes['gene_biotype'][0]+"\t"+db[id].attributes['Name'][0]+"\t"+" "+"\t"+" "+"\t"+" "+"\n")
-            else:
-                if ((oldbase=="T" or oldbase=="t") and (newbase=="C" or newbase=="c")) or ((oldbase=="A" or oldbase=="a") and (newbase=="G" or oldbase=="g")):
-                    result_file.write(str(accession)+"\t"+str(position)+"\t"+str(oldbase)+"\t"+str(newbase)+"\t"+str(linsplit[4])+"\t"+str(linsplit[5])+"\t"+str(linsplit[6])+"\t"+str(linsplit[7])
-                                                              +"\t"+str(linsplit[8])+"\t"+str(linsplit[9])+"\t"+"Intergenic region"+"\t"+" "+"\t"+" "+"\t"+" "+"\t"+" "+"\n")
+                                        result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                                                                  +"\t"+"-"+"\t"+str(cds_start)+"\t"+str(cds_end)+"\t"+old_pro[n]+str(n+1)+new_pro[n]+"\t"+str(last_codon)+"\n")
+                        else:
+                            result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                            +"\t"+""+"\t"+str(cds_start)+"\t"+str(cds_end)+"\t"+"cds_filt_left"+"\t"+""+"\n")
+                    else:
+                        result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                            +"\t"+""+"\t"+str(cds_start)+"\t"+str(cds_end)+"\t"+"cds_len_not_3"+"\t"+""+"\n")
+                else:
+                    gene_start=int(list(temp_df["gene_start"])[0])
+                    gene_end=int(list(temp_df["gene_end"])[0])
+                    gene_strand=list(temp_df["gene_strand"])[0]
+                    gene_biotype=list(temp_df["gene_biotype"])[0]
+                    gene_locus=list(temp_df["locus_tag"])[0]
+                    gene_name=list(temp_df["gene_name"])[0]
+                    result_file.write(line.strip()+"\t"+gene_biotype+"\t"+gene_locus+"\t"+gene_name
+                        +"\t"+""+"\t"+str(gene_start)+"\t"+str(gene_end)+"\t"+"no_determined_cds"+"\t"+""+"\n")
     result_file.close()
+
+def get_A_I_result(infile,outdir,outname):
+    infile=open(infile,"r")
+    all_lines=infile.readlines()
+    outfile=open(f"{outdir}/{outname}_A_I_result.tsv","w")
+    outfile.write("Accession	Position	Old_base	New_base	Raw_read_depth	Coverage	Edit_level	snp_coverage	snp_f_coverage	snp_r_coverage	Gene_biotype	locus_tag	Gene_name	Gene_strand	gene_start	gene_end	Amino acid_change	codon_num	SRA\n")
+    for line in all_lines:
+        all_line_info=line.split("\t")
+        if len(all_line_info)>19:
+            pass
+        if all_line_info[10]=="Intergenic region" and all_line_info[2]=="A" and all_line_info[3]=="G":
+            outfile.write(line)
+        elif all_line_info[10]=="Intergenic region" and all_line_info[2]=="T" and all_line_info[3]=="C":
+            outfile.write(line)
+        elif all_line_info[10]=="protein_coding" and all_line_info[2]=="T" and all_line_info[3]=="C" and all_line_info[13]=="-":
+            outfile.write(line)
+        elif all_line_info[10]=="protein_coding" and all_line_info[2]=="A" and all_line_info[3]=="G" and all_line_info[13]=="+":
+            outfile.write(line)
+        elif all_line_info[10]=="protein_coding" and all_line_info[2]=="T" and all_line_info[3]=="C" and all_line_info[13]=="" and all_line_info[16]=="no_determined_cds":
+            outfile.write(line) 
+        elif all_line_info[10]=="protein_coding" and all_line_info[2]=="A" and all_line_info[3]=="G" and all_line_info[13]=="" and all_line_info[16]=="no_determined_cds":
+            outfile.write(line)
+    outfile.close()
+    
